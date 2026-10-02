@@ -1,309 +1,131 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>แดชบอร์ดผลการสอบ</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-    const supabase = createClient(
-      'https://wzwyotzzxycqfwercakh.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6d3lvdHp6eHljcWZ3ZXJjYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNTg3MTMsImV4cCI6MjA3MjYzNDcxM30.lgiAf9oBUqsaWGb3u_80wuoKAODQHE_lIBxpGumhrno'
-    );
-
-    let allQuizResults = [];
-    let allSubjectiveAnswers = [];
-
-    // ดึงข้อมูลครั้งเดียวเมื่อโหลดหน้าจอ
-    async function fetchAllDataOnce() {
-        try {
-            const { data: quizResults } = await supabase.from("quiz_results").select("*");
-            const { data: subjectiveAnswers } = await supabase.from("subjective_answers").select("*");
-            
-            allQuizResults = quizResults || [];
-            allSubjectiveAnswers = subjectiveAnswers || [];
-            
-            // เรียกแสดงผลครั้งแรก
-            fetchData();
-        } catch (e) {
-            console.error("Error fetching initial data:", e);
-        }
-    }
-
-    async function fetchData() {
-      const email = document.getElementById("emailInput").value.trim();
-      const date = document.getElementById("dateInput").value.trim();
-
-      // กรองข้อมูลจากชุดข้อมูลที่ถูกเก็บไว้แล้ว
-      const filteredQuiz = allQuizResults.filter(r =>
-        (!email || r.user_email.includes(email)) &&
-        (!date || r.created_at.startsWith(date))
-      );
-      const filteredSubjective = allSubjectiveAnswers.filter(r =>
-        (!email || r.user_email.includes(email)) &&
-        (!date || r.created_at.startsWith(date))
-      );
-
-      renderTables(filteredQuiz, filteredSubjective);
-      // ลบ renderChart(filteredQuiz); ออกไป
-    }
-
-    function renderTables(quizData, subjectiveData) {
-      const quizTable = document.getElementById("quizTableBody");
-      const subjectiveTable = document.getElementById("subjectiveTableBody");
-      quizTable.innerHTML = "";
-      subjectiveTable.innerHTML = "";
-
-      quizData.forEach((r, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${i + 1}</td><td>${r.name || 'N/A'}</td><td>${r.user_email}</td><td>${r.score}</td><td>${r.total_questions}</td><td>${r.created_at}</td>`;
-        quizTable.appendChild(row);
-      });
-
-      subjectiveData.forEach((r, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${i + 1}</td><td>${r.name || 'N/A'}</td><td>${r.user_email}</td><td><pre>${JSON.stringify(r.answers, null, 2)}</pre></td><td>${r.created_at}</td>`;
-        subjectiveTable.appendChild(row);
-      });
-    }
-
-    // *** ลบฟังก์ชัน renderChart ออกไปทั้งหมด ***
-
-    function downloadExcel() {
-      const wb = XLSX.utils.book_new();
-      const quizTable = XLSX.utils.table_to_sheet(document.getElementById("quizTable"));
-      const subjectiveTable = XLSX.utils.table_to_sheet(document.getElementById("subjectiveTable"));
-      XLSX.utils.book_append_sheet(wb, quizTable, "ปรนัย");
-      XLSX.utils.book_append_sheet(wb, subjectiveTable, "อัตนัย");
-      XLSX.writeFile(wb, "ผลการสอบ.xlsx");
-    }
-
-    function downloadPDF() {
-      const element = document.getElementById("dashboard");
-      html2pdf().from(element).save("ผลการสอบ.pdf");
-    }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("searchBtn").addEventListener("click", fetchData);
-      document.getElementById("downloadExcelBtn").addEventListener("click", downloadExcel);
-      document.getElementById("downloadPDFBtn").addEventListener("click", downloadPDF);
-      fetchAllDataOnce(); 
-    });
-  </script>
-  <style>
-    /* ------------------------------------------- */
-    /* GLOBAL / DESKTOP STYLES */
-    /* ------------------------------------------- */
-     :root {
-         --primary-color: #007acc;
-         --background-color: #f4f7f9;
-         --card-background: #ffffff;
-         --text-color: #333;
-     }
-
-    body {
-      font-family: 'Sarabun', sans-serif;
-      background: var(--background-color);
-      margin: 0;
-      padding: 20px;
-      color: var(--text-color);
-    }
-    
-    #dashboard {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    h2 {
-      text-align: center;
-      color: var(--primary-color);
-      margin-bottom: 30px;
-      font-size: 2rem;
-      font-weight: 700;
-    }
-    
-    h3 {
-         border-left: 5px solid var(--primary-color);
-         padding-left: 15px;
-         margin-top: 40px;
-         margin-bottom: 20px;
-         color: var(--text-color);
-         font-size: 1.5rem;
-         font-weight: 600;
-    }
-
-    .search-box {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 30px;
-      justify-content: center;
-      padding: 20px;
-      background: var(--card-background);
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-    }
-
-    input, button {
-      padding: 12px 15px;
-      font-size: 1rem;
-    }
-    
-    input {
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      flex-grow: 1; 
-      max-width: 300px;
-      transition: border-color 0.3s ease;
-    }
-    
-    input:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 5px rgba(0, 122, 204, 0.3);
-        outline: none;
-    }
-
-    button {
-         background-color: var(--primary-color);
-         color: white;
-         border: none;
-         border-radius: 6px;
-         cursor: pointer;
-         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-         transition: all 0.3s ease;
-    }
-    
-    button:hover {
-        background-color: #005fa3;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-
-    /* **การจัดการตารางเพื่อให้รองรับมือถือ** */
-    .table-container {
-        overflow-x: auto; /* ทำให้ตารางเลื่อนได้แนวนอนบนมือถือ */
-        margin-bottom: 30px;
-        /* เพิ่มเงาและพื้นหลังให้กับ container แทน canvas */
-        background: var(--card-background);
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    
-    /* ลบ CSS ที่เกี่ยวกับ Canvas ออกไป */
-
-    table {
-      min-width: 700px; 
-      width: 100%;
-      border-collapse: separate; 
-      border-spacing: 0;
-      background: var(--card-background);
-      /* ลบ border-radius และ box-shadow ออกจาก table 
-         แล้วไปใส่ที่ .table-container แทน เพื่อให้ตารางเต็ม container */
-      border-radius: 10px; 
-      overflow: hidden; 
-      box-shadow: none; 
-    }
-
-    th, td {
-      border: none; 
-      border-bottom: 1px solid #eee; 
-      padding: 12px 15px; 
-      text-align: left;
-    }
-    
-    tbody tr:hover {
-        background-color: #f0f7ff;
-    }
-
-    th {
-      background: var(--primary-color);
-      color: white;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    
-    tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    pre {
-        margin: 0;
-        white-space: pre-wrap;
-        font-family: inherit;
-    }
-
-    .btn-group {
-      display: flex;
-      flex-wrap: wrap; 
-      gap: 15px;
-      justify-content: center;
-      margin-bottom: 30px;
-    }
-    
-    /* ------------------------------------------- */
-    /* RESPONSIVE MEDIA QUERIES (สำหรับมือถือ) */
-    /* ------------------------------------------- */
-    @media (max-width: 768px) {
-        .search-box, .btn-group {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 15px;
-            gap: 10px;
-        }
-
-        input {
-            width: auto;
-            max-width: 100%;
-        }
-
-        button {
-            width: 100%;
-        }
-        
-        h2 { font-size: 1.5rem; }
-        h3 { font-size: 1.2rem; }
-        
-        table {
-            min-width: unset;
-        }
-    }
-
-  </style>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard เสียงตอบ Sales E-Simulator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; padding: 20px; background: #f4f7f6; margin: 0; }
+        .wrap { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 26px; color: #d9534f; margin: 10px 0 16px; }
+        .bar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+        input[type="text"] { flex: 1; min-width: 200px; padding: 11px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; font-family: inherit; }
+        button { padding: 11px 18px; font-size: 16px; font-family: inherit; font-weight: bold; color: #fff; background: #5cb85c; border: none; border-radius: 8px; cursor: pointer; }
+        button:hover { background: #4cae4c; }
+        .count { color: #666; font-size: 14px; margin-bottom: 10px; }
+        details { background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.07); margin-bottom: 10px; padding: 0 16px; }
+        summary { cursor: pointer; padding: 14px 0; list-style: none; }
+        summary b { font-size: 17px; }
+        .meta { color: #777; font-size: 14px; margin-top: 3px; }
+        .item { border-top: 1px solid #eee; padding: 12px 0; }
+        .item .q { font-size: 14px; color: #444; margin-bottom: 6px; }
+        .item .p { font-size: 13px; color: #337ab7; font-weight: bold; }
+        audio { width: 100%; }
+        .msg { text-align: center; color: #888; padding: 30px 0; }
+        .err { color: #d9534f; }
+    </style>
 </head>
 <body>
-  <div id="dashboard">
-    <h2>แดชบอร์ดผลการสอบ</h2>
-    <div class="search-box">
-      <input type="text" id="emailInput" placeholder="ค้นหาอีเมลพนักงาน">
-      <input type="date" id="dateInput">
-      <button id="searchBtn">ค้นหา</button>
-    </div>
-    <div class="btn-group">
-      <button id="downloadExcelBtn">ดาวน์โหลด Excel</button>
-      <button id="downloadPDFBtn">ดาวน์โหลด PDF</button>
-    </div>
-    
-        <h3>ตารางสรุปคะแนน (ข้อสอบปรนัย)</h3>
-    <div class="table-container">
-      <table id="quizTable">
-        <thead>
-                <tr><th>#</th><th>ชื่อผู้ทำแบบทดสอบ</th><th>อีเมล</th><th>คะแนน</th><th>จำนวนข้อ</th><th>วันที่ทำแบบทดสอบ</th></tr>
-        </thead>
-        <tbody id="quizTableBody"></tbody>
-      </table>
-    </div>
+<div class="wrap">
+    <h1>🎧 เสียงตอบ Sales E-Simulator (ทีมเอเจน)</h1>
+    <div class="bar">
+        <input type="text" id="search" placeholder="ค้นหาชื่อหรือสังกัด">
+        <button id="reloadBtn">รีเฟรช</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="list"><div class="msg">กำลังโหลด...</div></div>
+</div>
 
-    <h3>ตารางคำตอบ (ข้อสอบอัตนัย)</h3>
-    <div class="table-container">
-      <table id="subjectiveTable">
-        <thead>
-                <tr><th>#</th><th>ชื่อผู้ทำแบบทดสอบ</th><th>อีเมล</th><th>คำตอบ</th><th>วันที่ทำแบบทดสอบ</th></tr>
-        </thead>
-        <tbody id="subjectiveTableBody"></tbody>
-      </table>
-    </div>
-  </div>
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const supabaseUrl = 'https://wzwyotzzxycqfwercakh.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6d3lvdHp6eHljcWZ3ZXJjYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNTg3MTMsImV4cCI6MjA3MjYzNDcxM30.lgiAf9oBUqsaWGb3u_80wuoKAODQHE_lIBxpGumhrno';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ดึงเฉพาะตารางและ bucket ของแอปเอเจนนี้เท่านั้น
+    const TABLE  = 'agent_recordings';
+    const BUCKET = 'agent-recordings';
+
+    const $ = id => document.getElementById(id);
+    const el = (tag, text, cls) => {
+        const e = document.createElement(tag);
+        if (text !== undefined) e.textContent = text;
+        if (cls) e.className = cls;
+        return e;
+    };
+    const fmt = d => new Date(d).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+    const DIFF = { easy: 'ปกติ (Easy)', hard: 'ท้าทาย (Hard)' };
+
+    let sessions = [];
+
+    const load = async () => {
+        $('list').innerHTML = '<div class="msg">กำลังโหลด...</div>';
+        $('count').textContent = '';
+        const { data, error } = await supabase.from(TABLE).select('*')
+            .order('created_at', { ascending: false }).limit(1000);
+        if (error) {
+            $('list').innerHTML = '';
+            $('list').append(el('div', 'โหลดข้อมูลไม่สำเร็จ: ' + error.message, 'msg err'));
+            return;
+        }
+        const map = new Map();
+        data.forEach(r => {
+            if (!map.has(r.session_id)) {
+                map.set(r.session_id, { id: r.session_id, name: r.trainee_name, group: r.trainee_group,
+                    difficulty: r.difficulty, at: r.created_at, rows: [] });
+            }
+            map.get(r.session_id).rows.push(r);
+        });
+        sessions = [...map.values()];
+        sessions.forEach(s => s.rows.sort((a, b) => a.part - b.part || a.q_num - b.q_num));
+        render();
+    };
+
+    const fillAudio = (box, s) => {
+        s.rows.forEach(r => {
+            const item = el('div', undefined, 'item');
+            item.append(el('div', 'Step ' + r.part + ' ข้อ ' + r.q_num, 'p'));
+            item.append(el('div', r.q_text || '', 'q'));
+            if (r.audio_path) {
+                const a = document.createElement('audio');
+                a.controls = true;
+                a.preload = 'none';
+                a.src = supabase.storage.from(BUCKET).getPublicUrl(r.audio_path).data.publicUrl;
+                item.append(a);
+            } else {
+                item.append(el('div', 'ไม่มีไฟล์เสียง', 'msg'));
+            }
+            box.append(item);
+        });
+    };
+
+    const render = () => {
+        const kw = $('search').value.trim().toLowerCase();
+        const shown = sessions.filter(s => !kw ||
+            (s.name || '').toLowerCase().includes(kw) || (s.group || '').toLowerCase().includes(kw));
+        $('count').textContent = 'แสดง ' + shown.length + ' ชุดการทดสอบ จากทั้งหมด ' + sessions.length;
+        $('list').innerHTML = '';
+        if (!shown.length) { $('list').append(el('div', 'ไม่พบข้อมูล', 'msg')); return; }
+        shown.forEach(s => {
+            const d = document.createElement('details');
+            const sum = document.createElement('summary');
+            sum.append(el('b', s.name));
+            sum.append(el('div', (s.group || '-') + ' • ' + (DIFF[s.difficulty] || s.difficulty || '-') +
+                ' • ' + s.rows.length + ' ข้อ • ' + fmt(s.at), 'meta'));
+            d.append(sum);
+            const box = document.createElement('div');
+            d.append(box);
+            // สร้างเครื่องเล่นเสียงตอนเปิดดูเท่านั้น เพื่อไม่โหลดไฟล์เสียงทั้งหมดพร้อมกัน
+            d.addEventListener('toggle', () => { if (d.open && !box.childElementCount) fillAudio(box, s); });
+            $('list').append(d);
+        });
+    };
+
+    $('search').oninput = render;
+    $('reloadBtn').onclick = load;
+    load();
+</script>
 </body>
 </html>
