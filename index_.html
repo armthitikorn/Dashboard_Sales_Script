@@ -1,181 +1,172 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>แดชบอร์ดผลการสอบ</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-    const supabase = createClient(
-      'https://wzwyotzzxycqfwercakh.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6d3lvdHp6eHljcWZ3ZXJjYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNTg3MTMsImV4cCI6MjA3MjYzNDcxM30.lgiAf9oBUqsaWGb3u_80wuoKAODQHE_lIBxpGumhrno'
-    );
-
-    async function fetchData() {
-      const email = document.getElementById("emailInput").value.trim();
-      const date = document.getElementById("dateInput").value.trim();
-
-      const { data: quizResults } = await supabase.from("quiz_results").select("*");
-      const { data: subjectiveAnswers } = await supabase.from("subjective_answers").select("*");
-
-      const filteredQuiz = quizResults.filter(r =>
-        (!email || r.user_email.includes(email)) &&
-        (!date || r.created_at.startsWith(date))
-      );
-      const filteredSubjective = subjectiveAnswers.filter(r =>
-        (!email || r.user_email.includes(email)) &&
-        (!date || r.created_at.startsWith(date))
-      );
-
-      renderTables(filteredQuiz, filteredSubjective);
-      renderChart(filteredQuiz);
-    }
-
-    function renderTables(quizData, subjectiveData) {
-      const quizTable = document.getElementById("quizTableBody");
-      const subjectiveTable = document.getElementById("subjectiveTableBody");
-      quizTable.innerHTML = "";
-      subjectiveTable.innerHTML = "";
-
-      quizData.forEach((r, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${i + 1}</td><td>${r.user_email}</td><td>${r.score}</td><td>${r.total_questions}</td><td>${r.created_at}</td>`;
-        quizTable.appendChild(row);
-      });
-
-      subjectiveData.forEach((r, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${i + 1}</td><td>${r.user_email}</td><td><pre>${JSON.stringify(r.answers, null, 2)}</pre></td><td>${r.created_at}</td>`;
-        subjectiveTable.appendChild(row);
-      });
-    }
-
-    function renderChart(data) {
-      const ctx = document.getElementById("scoreChart").getContext("2d");
-      const labels = data.map(r => r.user_email);
-      const scores = data.map(r => r.score);
-      if (window.scoreChartInstance) window.scoreChartInstance.destroy();
-      window.scoreChartInstance = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "คะแนนรวม",
-            data: scores,
-            backgroundColor: "rgba(0, 122, 204, 0.6)"
-          }]
-        },
-        options: {
-          animation: {
-            duration: 1000,
-            easing: "easeOutBounce"
-          },
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
-    }
-
-    function downloadExcel() {
-      const wb = XLSX.utils.book_new();
-      const quizTable = XLSX.utils.table_to_sheet(document.getElementById("quizTable"));
-      const subjectiveTable = XLSX.utils.table_to_sheet(document.getElementById("subjectiveTable"));
-      XLSX.utils.book_append_sheet(wb, quizTable, "ปรนัย");
-      XLSX.utils.book_append_sheet(wb, subjectiveTable, "อัตนัย");
-      XLSX.writeFile(wb, "ผลการสอบ.xlsx");
-    }
-
-    function downloadPDF() {
-      const element = document.getElementById("dashboard");
-      html2pdf().from(element).save("ผลการสอบ.pdf");
-    }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("searchBtn").addEventListener("click", fetchData);
-      document.getElementById("downloadExcelBtn").addEventListener("click", downloadExcel);
-      document.getElementById("downloadPDFBtn").addEventListener("click", downloadPDF);
-    });
-  </script>
-  <style>
-    body {
-      font-family: 'Sarabun', sans-serif;
-      background: #f0f2f5;
-      margin: 0;
-      padding: 20px;
-    }
-    h2 {
-      text-align: center;
-      color: #007acc;
-    }
-    .search-box {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      justify-content: center;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 1rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #007acc;
-      color: white;
-    }
-    canvas {
-      max-width: 100%;
-      margin-bottom: 30px;
-    }
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 30px;
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard เสียงตอบ Sales E-Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap');
+body{font-family:'Sarabun',sans-serif;padding:20px;background:#f4f7f6;margin:0}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:26px;color:#d9534f;margin:10px 0 16px}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+input,select{padding:11px;border:1px solid #ddd;border-radius:6px;font-size:16px;font-family:inherit;background:#fff}
+input[type=text]{flex:1;min-width:200px}
+button{padding:11px 18px;font-size:16px;font-family:inherit;font-weight:bold;color:#fff;background:#5cb85c;border:none;border-radius:8px;cursor:pointer}
+button:hover{background:#4cae4c}
+button.out{background:#999}
+.count{color:#666;font-size:14px;margin-bottom:10px}
+details{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:10px;padding:0 16px}
+summary{cursor:pointer;padding:14px 0;list-style:none}
+summary b{font-size:17px}
+.meta{color:#777;font-size:14px;margin-top:3px}
+.item{border-top:1px solid #eee;padding:12px 0}
+.item .q{font-size:14px;color:#444;margin-bottom:6px}
+.item .p{font-size:13px;color:#337ab7;font-weight:bold}
+audio{width:100%}
+.msg{text-align:center;color:#888;padding:30px 0}
+.err{color:#d9534f}
+.login{max-width:360px;margin:12vh auto;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:20px;display:grid;gap:10px}
+.login h1{margin:0;font-size:22px}
+.hide{display:none}
+</style>
 </head>
 <body>
-  <div id="dashboard">
-    <h2>แดชบอร์ดผลการสอบ</h2>
-    <div class="search-box">
-      <input type="text" id="emailInput" placeholder="ค้นหาอีเมลพนักงาน">
-      <input type="date" id="dateInput">
-      <button id="searchBtn">ค้นหา</button>
-    </div>
-    <div class="btn-group">
-      <button id="downloadExcelBtn">ดาวน์โหลด Excel</button>
-      <button id="downloadPDFBtn">ดาวน์โหลด PDF</button>
-    </div>
-    <canvas id="scoreChart" height="100"></canvas>
-    <h3>ตารางสรุปคะแนน (ข้อสอบปรนัย)</h3>
-    <table id="quizTable">
-      <thead>
-        <tr><th>#</th><th>อีเมล</th><th>คะแนน</th><th>จำนวนข้อ</th><th>วันที่ทำแบบทดสอบ</th></tr>
-      </thead>
-      <tbody id="quizTableBody"></tbody>
-    </table>
-    <h3>ตารางคำตอบ (ข้อสอบอัตนัย)</h3>
-    <table id="subjectiveTable">
-      <thead>
-        <tr><th>#</th><th>อีเมล</th><th>คำตอบ</th><th>วันที่ทำแบบทดสอบ</th></tr>
-      </thead>
-      <tbody id="subjectiveTableBody"></tbody>
-    </table>
+
+<div id="loginView" class="login">
+  <h1>🎧 เข้าสู่ระบบเทรนเนอร์</h1>
+  <input type="text" id="em" placeholder="อีเมล" autocomplete="username">
+  <input type="password" id="pw" placeholder="รหัสผ่าน" autocomplete="current-password">
+  <div id="loginErr" class="err"></div>
+  <button id="loginBtn">เข้าสู่ระบบ</button>
+</div>
+
+<div id="appView" class="wrap hide">
+  <h1>🎧 เสียงตอบข้อโต้แย้ง</h1>
+  <div class="bar">
+    <input type="text" id="search" placeholder="ค้นหาชื่อหรือสังกัด">
+    <select id="teamF"><option value="">ทุกทีม</option><option value="tele">ทีมเทเล</option><option value="agent">ทีมเอเจน</option></select>
+    <button id="reloadBtn">รีเฟรช</button>
+    <button id="outBtn" class="out">ออกจากระบบ</button>
   </div>
+  <div class="count" id="count"></div>
+  <div id="list"></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const supabase = createClient(
+  'https://wzwyotzzxycqfwercakh.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6d3lvdHp6eHljcWZ3ZXJjYWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNTg3MTMsImV4cCI6MjA3MjYzNDcxM30.lgiAf9oBUqsaWGb3u_80wuoKAODQHE_lIBxpGumhrno'
+);
+
+// ดึงเฉพาะตารางและ bucket ของงานคำถามเสียงนี้ (bucket เป็นส่วนตัว ใช้ลิงก์ชั่วคราว)
+const TABLE = 'vq_answers';
+const BUCKET = 'vq-answers';
+
+const $ = id => document.getElementById(id);
+const el = (tag, text, cls) => {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+};
+const fmt = d => new Date(d).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+const TEAM = { tele: 'ทีมเทเล', agent: 'ทีมเอเจน' };
+let sessions = [];
+
+// ---------- ล็อกอิน ----------
+const gate = on => {
+  $('loginView').classList.toggle('hide', on);
+  $('appView').classList.toggle('hide', !on);
+  if (on) load();
+};
+$('loginBtn').onclick = async () => {
+  $('loginErr').textContent = '';
+  const { error } = await supabase.auth.signInWithPassword({ email: $('em').value.trim(), password: $('pw').value });
+  if (error) return $('loginErr').textContent = 'เข้าสู่ระบบไม่สำเร็จ: ตรวจสอบอีเมลและรหัสผ่าน';
+  gate(true);
+};
+$('outBtn').onclick = async () => { await supabase.auth.signOut(); gate(false); };
+supabase.auth.getSession().then(({ data }) => gate(!!data.session)).catch(() => gate(false));
+
+// ---------- โหลดข้อมูล ----------
+async function load() {
+  $('list').innerHTML = '<div class="msg">กำลังโหลด...</div>';
+  $('count').textContent = '';
+  const { data, error } = await supabase.from(TABLE).select('*')
+    .order('created_at', { ascending: false }).limit(1000);
+  if (error) {
+    $('list').innerHTML = '';
+    $('list').append(el('div', 'โหลดข้อมูลไม่สำเร็จ: ' + error.message, 'msg err'));
+    return;
+  }
+  const map = new Map();
+  data.forEach(r => {
+    if (!map.has(r.session_id)) {
+      map.set(r.session_id, { id: r.session_id, name: r.employee_name, group: r.employee_group,
+        team: r.team, at: r.created_at, rows: [] });
+    }
+    map.get(r.session_id).rows.push(r);
+  });
+  sessions = [...map.values()];
+  sessions.forEach(s => s.rows.sort((a, b) => a.position - b.position));
+  render();
+}
+
+// สร้างลิงก์เสียงชั่วคราว (1 ชั่วโมง) ตอนเปิดดูเท่านั้น
+async function fillAudio(box, s) {
+  box.append(el('div', 'กำลังโหลดเสียง...', 'msg'));
+  const paths = s.rows.map(r => r.answer_audio_path).filter(Boolean);
+  const urls = {};
+  if (paths.length) {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600);
+    if (error) { box.innerHTML = ''; box.append(el('div', 'ดึงเสียงไม่สำเร็จ: ' + error.message, 'msg err')); return; }
+    data.forEach(d => { if (d.signedUrl) urls[d.path] = d.signedUrl; });
+  }
+  box.innerHTML = '';
+  s.rows.forEach((r, i) => {
+    const item = el('div', undefined, 'item');
+    item.append(el('div', 'ข้อ ' + (i + 1), 'p'));
+    item.append(el('div', r.question_text || '', 'q'));
+    const u = urls[r.answer_audio_path];
+    if (u) {
+      const a = document.createElement('audio');
+      a.controls = true; a.preload = 'none'; a.src = u;
+      item.append(a);
+    } else {
+      item.append(el('div', 'ไม่มีไฟล์เสียง', 'msg'));
+    }
+    box.append(item);
+  });
+}
+
+function render() {
+  const kw = $('search').value.trim().toLowerCase(), tf = $('teamF').value;
+  const shown = sessions.filter(s =>
+    (!tf || s.team === tf) &&
+    (!kw || (s.name || '').toLowerCase().includes(kw) || (s.group || '').toLowerCase().includes(kw)));
+  $('count').textContent = 'แสดง ' + shown.length + ' ชุดการทดสอบ จากทั้งหมด ' + sessions.length;
+  $('list').innerHTML = '';
+  if (!shown.length) { $('list').append(el('div', 'ไม่พบข้อมูล', 'msg')); return; }
+  shown.forEach(s => {
+    const d = document.createElement('details');
+    const sum = document.createElement('summary');
+    sum.append(el('b', s.name));
+    sum.append(el('div', (s.group || '-') + ' • ' + (TEAM[s.team] || s.team) + ' • ' +
+      s.rows.length + ' ข้อ • ' + fmt(s.at), 'meta'));
+    d.append(sum);
+    const box = document.createElement('div');
+    d.append(box);
+    d.addEventListener('toggle', () => { if (d.open && !box.childElementCount) fillAudio(box, s); });
+    $('list').append(d);
+  });
+}
+
+$('search').oninput = render;
+$('teamF').onchange = render;
+$('reloadBtn').onclick = load;
+</script>
 </body>
 </html>
